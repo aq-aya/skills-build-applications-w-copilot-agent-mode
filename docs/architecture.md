@@ -30,13 +30,13 @@ OctoFit Tracker is a three-tier application for a school fitness program. The st
 
 Record your plan here before editing code.
 
-- Presentation tier decision:
-- Logic tier decision:
-- Data tier decision:
-- Activity tracking approach:
-- Team management approach:
-- Leaderboard approach:
-- Workout suggestions approach:
+- Presentation tier decision: Use React 19 with Vite and React Router for route-level capability cards. Fetch each capability through `src/api/client.ts`, and present loading, empty, success, and accessible error states consistently.
+- Logic tier decision: Use Express routes under `/api/` for the HTTP contract and explicit service functions in `octofitService.ts` for validation and business behavior. Return deliberate 400/404 responses for invalid input or missing records, and keep internal HTTP status handling out of Mongoose models.
+- Data tier decision: Use Mongoose schemas to enforce required fields and relationships, with MongoDB as the shared persistence layer. Seed the demo users, teams, activities, and workouts with stable upserts while preserving unrelated records.
+- Activity tracking approach: Create activities only after validating ObjectIds and confirming that the referenced user and team exist. Store the submitted type and minutes, use minutes as the initial points value, and set `occurredAt` to the creation time.
+- Team management approach: Require a team name and mascot, default members to an empty array, and validate that any submitted member IDs are valid and belong to existing users. Preserve team names and mascots in list and create responses.
+- Leaderboard approach: Aggregate activity points by team, map only teams with recorded activity, sort descending by total points with team name as a deterministic tie-breaker, and assign 1-based ranks after sorting.
+- Workout suggestions approach: Find the user by email, inspect their ten most recent activities, and derive an endurance or strength focus from the most recent type and fitness goal. Prefer matching workouts; if no match exists, return the available workouts and explain the match using the recent activity and goal.
 
 ## Test plan
 
