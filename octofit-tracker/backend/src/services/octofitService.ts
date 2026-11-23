@@ -58,6 +58,7 @@ export async function createTeam(input: unknown) {
   const name = typeof input.name === 'string' ? input.name.trim() : '';
   const mascot = typeof input.mascot === 'string' ? input.mascot.trim() : '';
   if (!name) throw httpError(400, 'Team name is required');
+  if (!mascot) throw httpError(400, 'Team mascot is required');
 
   const rawMembers = input.members;
   if (rawMembers !== undefined && !Array.isArray(rawMembers)) {

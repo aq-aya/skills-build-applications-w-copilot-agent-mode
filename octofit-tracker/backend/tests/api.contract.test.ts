@@ -55,6 +55,10 @@ describe('OctoFit API contract', () => {
     const member = await User.create({ name: 'Mona', email: 'mona@example.com', fitnessGoal: 'endurance' });
     const invalid = await request(app).post('/api/teams').send({ mascot: 'Mona' });
     expect(invalid.status).toBe(400);
+    const missingMascot = await request(app).post('/api/teams').send({ name: 'Octocats' });
+    expect(missingMascot.status).toBe(400);
+    const blankMascot = await request(app).post('/api/teams').send({ name: 'Octocats', mascot: ' ' });
+    expect(blankMascot.status).toBe(400);
     const created = await request(app).post('/api/teams').send({ name: 'Octocats', mascot: 'Mona', members: [member._id.toString()] });
     expect(created.status).toBe(201);
     expect(created.body.team).toMatchObject({ name: 'Octocats', mascot: 'Mona' });
