@@ -37,6 +37,9 @@ export async function createActivity(input: unknown) {
     Team.findById(teamId).lean(),
   ]);
   if (!user || !team) throw httpError(404, 'User or team not found');
+  if (!team.members.some((member) => member.equals(user._id))) {
+    throw httpError(400, 'User is not a member of the selected team');
+  }
 
   return Activity.create({
     user: user._id,
@@ -49,7 +52,16 @@ export async function createActivity(input: unknown) {
 }
 
 export async function listTeams() {
-  return Team.find().lean();
+  const teams = await Team.find().lean();
+  const users = await User.find({ _id: { $in: teams.flatMap((team) => team.members) } }).select('name').lean();
+  const names = new Map(users.map((user) => [user._id.toString(), user.name]));
+  return teams.map((team) => ({
+    ...team,
+    memberDetails: team.members.map((member) => ({
+      id: member.toString(),
+      name: names.get(member.toString()) ?? 'Unknown member',
+    })),
+  }));
 }
 
 export async function createTeam(input: unknown) {
@@ -64,10 +76,11 @@ export async function createTeam(input: unknown) {
   if (rawMembers !== undefined && !Array.isArray(rawMembers)) {
     throw httpError(400, 'Team members must be an array');
   }
-  const memberIds = rawMembers as unknown[] | undefined ?? [];
-  if (memberIds.some((id) => typeof id !== 'string' || !mongoose.isValidObjectId(id))) {
+  const members: unknown[] = rawMembers ?? [];
+  if (!members.every((id): id is string => typeof id === 'string' && mongoose.isValidObjectId(id))) {
     throw httpError(400, 'Invalid team member ID');
   }
+  const memberIds = [...new Set(members.map((id) => id.toLowerCase()))];
   const existingMembers = await User.find({ _id: { $in: memberIds } }).select('_id').lean();
   if (existingMembers.length !== memberIds.length) {
     throw httpError(404, 'One or more team members were not found');
@@ -103,9 +116,9 @@ export async function suggestWorkouts(userEmail: string) {
   const selected = matching.length > 0 ? matching : workouts;
   return selected.map((workout) => ({
     ...workout,
-    reason: recentType
-      ? `Matches your recent ${recentType} activity and ${goal} goal.`
-      : `Matches your ${goal} fitness goal.`,
+    reason: matching.length > 0
+      ? `Matches your ${focus} focus.`
+      : `No ${focus} workouts are available; this is another available workout.`,
   }));
 }
 
